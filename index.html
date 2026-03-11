@@ -32,6 +32,12 @@
     box-sizing: border-box;
   }
 
+  #controlsPanel svg {
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+
   #grid-container {
     flex: 1;
     display: flex;
@@ -40,16 +46,17 @@
     background: #f5f5f5;
   }
 
+  /* 6×6 grid, 90px cells */
   #grid {
     display: grid;
-    grid-template-columns: repeat(8, 70px);
-    grid-template-rows: repeat(8, 70px);
+    grid-template-columns: repeat(6, 90px);
+    grid-template-rows: repeat(6, 90px);
     gap: 4px;
   }
 
   .cell {
-    width: 70px;
-    height: 70px;
+    width: 90px;
+    height: 90px;
     background: #eee;
     border: 1px solid #bbb;
     position: relative;
@@ -114,6 +121,12 @@
     cursor: grab;
   }
 
+  /* Selected dot (tap-to-move) */
+  .dot.selected {
+    outline: 2px solid #1e88e5;
+    outline-offset: 2px;
+  }
+
   .fair {
     outline: 3px solid #43a047;
   }
@@ -154,9 +167,9 @@
     100% { box-shadow: inset 0 0 2px rgba(0,0,0,0.2); }
   }
 
-  .glow.green { background: rgba(0, 255, 0, 0.25); }
-  .glow.red   { background: rgba(255, 0, 0, 0.25); }
-  .glow.yellow{ background: rgba(255, 255, 0, 0.25); }
+  .glow.green  { background: rgba(0, 255, 0, 0.25); }
+  .glow.red    { background: rgba(255, 0, 0, 0.25); }
+  .glow.yellow { background: rgba(255, 255, 0, 0.25); }
 
   /* Popup modal */
   #popup-bg {
@@ -201,6 +214,77 @@
       <button id="clearBtn">Clear Grid</button>
     </div>
 
+    <h3>Controls</h3>
+    <button id="toggleControlsBtn">Show Controls</button>
+    
+    <div id="controlsPanel" style="display:none; margin-top:8px; font-size:13px; line-height:1.4;">
+      <ul style="list-style:none; padding-left:0;">
+    
+        <li>
+          <!-- Mouse click -->
+          <svg width="16" height="16" viewBox="0 0 24 24" style="vertical-align:middle;">
+            <path fill="currentColor" d="M12 2a5 5 0 0 0-5 5v10a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5zm3 5v2h-6V7a3 3 0 0 1 6 0zm-6 4h6v6a3 3 0 0     1-6 0v-6z"/>
+          </svg>
+          Click — increase square
+        </li>
+    
+        <li>
+          <!-- Shift key -->
+          <svg width="16" height="16" viewBox="0 0 24 24" style="vertical-align:middle;">
+            <rect x="3" y="7" width="18" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+            <text x="12" y="14" text-anchor="middle" font-size="8" fill="currentColor">Shift</text>
+          </svg>
+          + Click — decrease square
+        </li>
+    
+        <li>
+          <!-- Ctrl/Cmd key -->
+          <svg width="16" height="16" viewBox="0 0 24 24" style="vertical-align:middle;">
+            <rect x="3" y="7" width="18" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+            <text x="12" y="14" text-anchor="middle" font-size="8" fill="currentColor">Ctrl</text>
+          </svg>
+          + Click — clear square
+        </li>
+
+        <li>
+          <!-- Finger tap -->
+          <svg width="16" height="16" viewBox="0 0 24 24" style="vertical-align:middle;">
+            <path fill="currentColor" d="M9 11V5a2 2 0 1 1 4 0v6l3.5-1.5a1 1 0 0 1 1.3.6l1.7 4.7a3 3 0 0 1-1.7 3.8l-5.1 1.9a3 3 0 0 1-3.9-1.8L6 13.5a2 2 0 0 1 1.3-2.5L9 11z"/>
+          </svg>
+          Tap dot — select
+        </li>
+    
+        <li>
+          <!-- Arrow movement -->
+          <svg width="16" height="16" viewBox="0 0 24 24" style="vertical-align:middle;">
+            <path fill="currentColor" d="M12 2l4 4h-3v8h-2V6H8l4-4zm0 20l-4-4h3V10h2v8h3l-4 4z"/>
+          </svg>
+              Tap quadrant — move selected dot
+        </li>
+    
+        <li>
+          <!-- Drag icon -->
+          <svg width="16" height="16" viewBox="0 0 24 24" style="vertical-align:middle;">
+            <circle cx="5" cy="12" r="2" fill="currentColor"/>
+            <circle cx="12" cy="12" r="2" fill="currentColor"/>
+            <circle cx="19" cy="12" r="2" fill="currentColor"/>
+          </svg>
+          Drag dot — move (desktop)
+        </li>
+
+        <li>
+          <!-- Long press -->
+          <svg width="16" height="16" viewBox="0 0 24 24" style="vertical-align:middle;">
+            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path fill="currentColor" d="M12 6v6l4 2"/>
+          </svg>
+          Long‑press — decrease square (touch)
+        </li>
+
+      </ul>
+    </div>
+
+
     <h3>Messages</h3>
     <div id="messages"></div>
   </aside>
@@ -225,8 +309,8 @@
    DATA + INITIALIZATION
 ------------------------------ */
 
-const GRID_ROWS = 8;
-const GRID_COLS = 8;
+const GRID_ROWS = 6;
+const GRID_COLS = 6;
 
 // Default dot distributions [top, right, bottom, left]
 const defaultPatterns = {
@@ -255,9 +339,20 @@ const popupClose = document.getElementById("popup-close");
 
 // Data model: each cell has n (1–8 or null) and dots [top, right, bottom, left]
 const squares = [];
-const fairnessDetails = [];  // Explanations per square
+const fairnessDetails = [];
 let sharedOverlayOn = false;
 
+// Tap-to-move selection state
+let selectedDot = null;
+
+function clearSelectedDot() {
+  if (selectedDot) {
+    selectedDot.classList.remove("selected");
+    selectedDot = null;
+  }
+}
+
+// Initialize grid data
 for (let r = 0; r < GRID_ROWS; r++) {
   squares[r] = [];
   fairnessDetails[r] = [];
@@ -277,20 +372,6 @@ for (let r = 0; r < GRID_ROWS; r++) {
     cell.className = "cell";
     cell.dataset.row = r;
     cell.dataset.col = c;
-
-    cell.addEventListener("click", (e) => {
-      // If clicking a dot, don't cycle N or open popup
-      if (e.target.classList.contains("dot")) return;
-
-      // If unfair and explanation exists, show popup
-      if (cell.classList.contains("unfair") && fairnessDetails[r][c]) {
-        showUnfairPopup(r, c);
-        return;
-      }
-
-      // Otherwise, cycle the square
-      cycleSquare(r, c, cell);
-    });
 
     gridEl.appendChild(cell);
   }
@@ -354,13 +435,35 @@ function makeQuad(name, index, r, c) {
   quad.className = "quad " + name;
   quad.dataset.quad = index;
 
-  quad.addEventListener("dragover", (e) => e.preventDefault());
+  /* Desktop drag-over */
+  quad.addEventListener("dragover", (e) => {
+    if (!selectedDot) e.preventDefault();
+  });
+
+  /* Desktop drop */
   quad.addEventListener("drop", (e) => {
+    if (selectedDot) return; // drag disabled while selected
     e.preventDefault();
     const fromQuad = parseInt(e.dataTransfer.getData("from-quad"), 10);
     const row = parseInt(e.dataTransfer.getData("row"), 10);
     const col = parseInt(e.dataTransfer.getData("col"), 10);
     if (row === r && col === c) moveDot(r, c, fromQuad, index);
+  });
+
+  /* Tap-to-move */
+  quad.addEventListener("click", (e) => {
+    e.stopPropagation();   // ← FIX: prevents cycling the square
+
+    if (!selectedDot) return;
+
+    const fromQuad = parseInt(selectedDot.parentElement.dataset.quad, 10);
+    const toQuad = index;
+
+    const row = parseInt(selectedDot.parentElement.parentElement.parentElement.dataset.row, 10);
+    const col = parseInt(selectedDot.parentElement.parentElement.parentElement.dataset.col, 10);
+
+    moveDot(row, col, fromQuad, toQuad);
+    clearSelectedDot();
   });
 
   return quad;
@@ -374,6 +477,7 @@ function renderDotsInQuadrant(r, c, quad, count, orientation) {
     dot.className = "dot";
     dot.draggable = true;
 
+    // Positioning
     if (orientation === "horizontal") {
       dot.style.left = `${5 + i * 12}px`;
       dot.style.top = "8px";
@@ -382,10 +486,27 @@ function renderDotsInQuadrant(r, c, quad, count, orientation) {
       dot.style.left = "8px";
     }
 
+    // Desktop drag
     dot.addEventListener("dragstart", (e) => {
+      if (selectedDot) {
+        e.preventDefault();
+        return;
+      }
       e.dataTransfer.setData("row", r.toString());
       e.dataTransfer.setData("col", c.toString());
       e.dataTransfer.setData("from-quad", quad.dataset.quad);
+    });
+
+    // Tap-to-select
+    dot.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (selectedDot === dot) {
+        clearSelectedDot();
+      } else {
+        clearSelectedDot();
+        selectedDot = dot;
+        dot.classList.add("selected");
+      }
     });
 
     quad.appendChild(dot);
@@ -436,73 +557,12 @@ function clearHighlights() {
   }
 }
 
-/* ------------------------------
-   SHARED REGION OVERLAY
------------------------------- */
-
-function clearSharedOverlay() {
-  document.querySelectorAll(".glow").forEach(el => el.remove());
-}
-
-function drawSharedOverlay() {
-  clearSharedOverlay();
-
-  for (let r = 0; r < GRID_ROWS; r++) {
-    for (let c = 0; c < GRID_COLS; c++) {
-      const sq = squares[r][c];
-      if (sq.n === null) continue;
-
-      const cellEl = gridEl.children[r * GRID_COLS + c];
-      const outer = cellEl.querySelector(".outer");
-      if (!outer) continue;
-
-      const neighbors = [
-        { dr:-1, dc:0, quad:0, className:"top" },
-        { dr:0, dc:1, quad:1, className:"right" },
-        { dr:1, dc:0, quad:2, className:"bottom" },
-        { dr:0, dc:-1, quad:3, className:"left" }
-      ];
-
-      for (const nb of neighbors) {
-        const nr = r + nb.dr;
-        const nc = c + nb.dc;
-        if (nr < 0 || nr >= GRID_ROWS || nc < 0 || nc >= GRID_COLS) continue;
-
-        const other = squares[nr][nc];
-        if (other.n === null) continue;
-
-        const myDots = sq.dots[nb.quad];
-        const theirDots = other.dots[opposite[nb.quad]];
-
-        // Decide glow color
-        // yellow by default, green if matching & non-empty,
-        // red if mismatch or empty
-        let colorClass = "yellow";
-        if (myDots === theirDots && myDots + theirDots > 0) {
-          colorClass = "green";
-        } else if (myDots !== theirDots || myDots + theirDots === 0) {
-          colorClass = "red";
-        }
-
-        const quadEl = outer.querySelector(".quad." + nb.className);
-        if (!quadEl) continue;
-
-        const glow = document.createElement("div");
-        glow.className = "glow " + colorClass;
-
-        const rect = quadEl.getBoundingClientRect();
-        const outerRect = outer.getBoundingClientRect();
-
-        glow.style.top = (rect.top - outerRect.top) + "px";
-        glow.style.left = (rect.left - outerRect.left) + "px";
-        glow.style.width = rect.width + "px";
-        glow.style.height = rect.height + "px";
-
-        outer.appendChild(glow);
-      }
-    }
+/* Deselect dot when tapping outside */
+document.body.addEventListener("click", (e) => {
+  if (!e.target.classList.contains("dot")) {
+    clearSelectedDot();
   }
-}
+});
 
 /* ------------------------------
    FAIRNESS CHECK (Option C)
@@ -621,7 +681,60 @@ function checkFairness() {
 }
 
 /* ------------------------------
-   POPUP
+   SHARED REGION GLOW (Corrected for 90px grid)
+------------------------------ */
+
+function drawSharedOverlay() {
+  clearSharedOverlay();
+
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      const sq = squares[r][c];
+      if (sq.n === null) continue;
+
+      const cellEl = gridEl.children[r * GRID_COLS + c];
+
+      const neighbors = [
+        { dr:-1, dc:0, quad:0, x:25, y:0,  w:50, h:25 },  // top
+        { dr:0,  dc:1, quad:1, x:75, y:25, w:25, h:50 },  // right
+        { dr:1, dc:0, quad:2, x:25, y:75, w:50, h:25 },  // bottom
+        { dr:0,  dc:-1, quad:3, x:0,  y:25, w:25, h:50 }  // left
+      ];
+
+      for (const nb of neighbors) {
+        const nr = r + nb.dr;
+        const nc = c + nb.dc;
+        if (nr < 0 || nr >= GRID_ROWS || nc < 0 || nc >= GRID_COLS) continue;
+
+        const other = squares[nr][nc];
+        if (other.n === null) continue;
+
+        const myDots = sq.dots[nb.quad];
+        const theirDots = other.dots[opposite[nb.quad]];
+
+        let color = "yellow";
+        if (myDots === theirDots && myDots + theirDots > 0) color = "green";
+        if (myDots !== theirDots) color = "red";
+
+        const glow = document.createElement("div");
+        glow.className = `glow ${color}`;
+        glow.style.left = nb.x + "%";
+        glow.style.top = nb.y + "%";
+        glow.style.width = nb.w + "%";
+        glow.style.height = nb.h + "%";
+
+        cellEl.appendChild(glow);
+      }
+    }
+  }
+}
+
+function clearSharedOverlay() {
+  document.querySelectorAll(".glow").forEach(g => g.remove());
+}
+
+/* ------------------------------
+   POPUP EXPLANATIONS
 ------------------------------ */
 
 function showUnfairPopup(r, c) {
@@ -639,9 +752,7 @@ function showUnfairPopup(r, c) {
 
   if (reasons.length > 0) {
     html += `<p><strong>Reasons:</strong></p><ul>`;
-    reasons.forEach(r => {
-      html += `<li>${r}</li>`;
-    });
+    reasons.forEach(rsn => html += `<li>${rsn}</li>`);
     html += `</ul>`;
   }
 
@@ -654,16 +765,108 @@ popupClose.addEventListener("click", () => {
 });
 
 popupBg.addEventListener("click", (e) => {
-  if (e.target === popupBg) {
-    popupBg.style.display = "none";
-  }
+  if (e.target === popupBg) popupBg.style.display = "none";
 });
 
 /* ------------------------------
-   TOGGLE SHARED REGIONS
+   NEW: Increase / Decrease / Clear Logic
 ------------------------------ */
 
-function toggleSharedRegions() {
+function decrementSquare(r, c, cellEl) {
+  const sq = squares[r][c];
+  if (sq.n === null) return;
+
+  if (sq.n > 1) {
+    sq.n--;
+    sq.dots = defaultPatterns[sq.n].slice();
+  } else {
+    sq.n = null;
+    sq.dots = [0,0,0,0];
+  }
+
+  renderCell(r, c, cellEl);
+  clearHighlights();
+  if (sharedOverlayOn) drawSharedOverlay();
+}
+
+function clearSquare(r, c, cellEl) {
+  squares[r][c].n = null;
+  squares[r][c].dots = [0,0,0,0];
+  fairnessDetails[r][c] = null;
+
+  cellEl.innerHTML = "";
+  cellEl.classList.remove("fair", "unfair");
+}
+
+/* ------------------------------
+   UPDATED CELL CLICK HANDLER (Desktop)
+------------------------------ */
+
+document.querySelectorAll(".cell").forEach(cell => {
+  cell.addEventListener("click", (e) => {
+    const r = parseInt(cell.dataset.row, 10);
+    const c = parseInt(cell.dataset.col, 10);
+
+    if (e.target.classList.contains("dot")) return;
+
+    if (cell.classList.contains("unfair") && fairnessDetails[r][c]) {
+      showUnfairPopup(r, c);
+      return;
+    }
+
+    if (e.shiftKey) {
+      decrementSquare(r, c, cell);
+      return;
+    }
+
+    if (e.ctrlKey || e.metaKey) {
+      clearSquare(r, c, cell);
+      return;
+    }
+
+    cycleSquare(r, c, cell);
+  });
+});
+
+/* ------------------------------
+   TOUCH LONG-PRESS TO DECREASE
+------------------------------ */
+
+document.querySelectorAll(".cell").forEach(cell => {
+  let pressTimer = null;
+
+  cell.addEventListener("touchstart", (e) => {
+    const r = parseInt(cell.dataset.row, 10);
+    const c = parseInt(cell.dataset.col, 10);
+
+    if (e.target.classList.contains("dot")) return;
+
+    pressTimer = setTimeout(() => {
+      decrementSquare(r, c, cell);
+      pressTimer = null;
+    }, 600);
+  });
+
+  cell.addEventListener("touchend", () => {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    }
+  });
+
+  cell.addEventListener("touchmove", () => {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    }
+  });
+});
+
+/* ------------------------------
+   BUTTONS
+------------------------------ */
+
+toggleSharedBtn.addEventListener("click", () => {
   sharedOverlayOn = !sharedOverlayOn;
   if (sharedOverlayOn) {
     toggleSharedBtn.textContent = "Hide Shared Regions";
@@ -672,15 +875,20 @@ function toggleSharedRegions() {
     toggleSharedBtn.textContent = "Show Shared Regions";
     clearSharedOverlay();
   }
-}
-
-/* ------------------------------
-   BUTTON HOOKS
------------------------------- */
+});
 
 checkBtn.addEventListener("click", checkFairness);
 clearBtn.addEventListener("click", clearGrid);
-toggleSharedBtn.addEventListener("click", toggleSharedRegions);
+
+const toggleControlsBtn = document.getElementById("toggleControlsBtn");
+const controlsPanel = document.getElementById("controlsPanel");
+
+toggleControlsBtn.addEventListener("click", () => {
+  const visible = controlsPanel.style.display === "block";
+  controlsPanel.style.display = visible ? "none" : "block";
+  toggleControlsBtn.textContent = visible ? "Show Controls" : "Hide Controls";
+});
+
 
 </script>
 </body>
